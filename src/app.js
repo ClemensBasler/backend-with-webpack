@@ -13,7 +13,7 @@ let io = socketio(server);
 
 function broadcastFrom(socket, point) {
   let data = {
-    color: socket.color,
+    color: getColor(),
     point: point,
     lastPoint: socket.lastPoint
   }
@@ -47,10 +47,10 @@ io.on('connection', socket => {
 });
 
 function __eval() {
-  // sockets.forEach((s, i) => {
-  //   s.color = getColor();
-  //   console.log('socket' + i, s.color);
-  // });
+  sockets.forEach((s, i) => {
+    s.color = getColor();
+    console.log('socket' + i, s.color);
+  });
 }
 
 export default server;

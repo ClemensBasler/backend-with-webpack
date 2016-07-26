@@ -26,7 +26,7 @@ function init() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   ctx = canvas.getContext('2d');
-  ctx.fillStyle = 'black';
+  ctx.fillStyle = 'yellow'
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
@@ -49,6 +49,6 @@ function draw(data) {
 }
 
 function __eval() {
-  // ctx.fillStyle = 'black';
-  // ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 }

@@ -2,3 +2,4 @@ node_modules
 .DS_Store
 build/*hot-update.*
 build/_records
+build

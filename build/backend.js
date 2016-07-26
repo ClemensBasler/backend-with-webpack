@@ -16,8 +16,19 @@ require("source-map-support").install();
 /******/
 /******/ 	
 /******/ 	
+/******/ 	// Copied from https://github.com/facebook/react/blob/bef45b0/src/shared/utils/canDefineProperty.js
+/******/ 	var canDefineProperty = false;
+/******/ 	try {
+/******/ 		Object.defineProperty({}, "x", {
+/******/ 			get: function() {}
+/******/ 		});
+/******/ 		canDefineProperty = true;
+/******/ 	} catch(x) {
+/******/ 		// IE will fail on defineProperty
+/******/ 	}
+/******/ 	
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "5b2c5229e4fcbdeddd23"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "074adcf8011da7722434"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
 /******/ 	
@@ -40,10 +51,26 @@ require("source-map-support").install();
 /******/ 		};
 /******/ 		for(var name in __webpack_require__) {
 /******/ 			if(Object.prototype.hasOwnProperty.call(__webpack_require__, name)) {
-/******/ 				fn[name] = __webpack_require__[name];
+/******/ 				if(canDefineProperty) {
+/******/ 					Object.defineProperty(fn, name, (function(name) {
+/******/ 						return {
+/******/ 							configurable: true,
+/******/ 							enumerable: true,
+/******/ 							get: function() {
+/******/ 								return __webpack_require__[name];
+/******/ 							},
+/******/ 							set: function(value) {
+/******/ 								__webpack_require__[name] = value;
+/******/ 							}
+/******/ 						};
+/******/ 					}(name)));
+/******/ 				} else {
+/******/ 					fn[name] = __webpack_require__[name];
+/******/ 				}
 /******/ 			}
 /******/ 		}
-/******/ 		fn.e = function(chunkId, callback) {
+/******/ 	
+/******/ 		function ensure(chunkId, callback) {
 /******/ 			if(hotStatus === "ready")
 /******/ 				hotSetStatus("prepare");
 /******/ 			hotChunksLoading++;
@@ -66,7 +93,15 @@ require("source-map-support").install();
 /******/ 					}
 /******/ 				}
 /******/ 			});
-/******/ 		};
+/******/ 		}
+/******/ 		if(canDefineProperty) {
+/******/ 			Object.defineProperty(fn, "e", {
+/******/ 				enumerable: true,
+/******/ 				value: ensure
+/******/ 			});
+/******/ 		} else {
+/******/ 			fn.e = ensure;
+/******/ 		}
 /******/ 		return fn;
 /******/ 	}
 /******/ 	
@@ -511,20 +546,122 @@ require("source-map-support").install();
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	__webpack_require__(15);
-	module.exports = __webpack_require__(2);
+	__webpack_require__(1);
+	module.exports = __webpack_require__(3);
 
 
 /***/ },
-/* 1 */,
+/* 1 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(__resourceQuery) {/*
+		MIT License http://www.opensource.org/licenses/mit-license.php
+		Author Tobias Koppers @sokra
+	*/
+	/*globals __resourceQuery */
+	if(true) {
+		function checkForUpdate(fromUpdate) {
+			module.hot.check(function(err, updatedModules) {
+				if(err) {
+					if(module.hot.status() in {
+							abort: 1,
+							fail: 1
+						}) {
+						console.warn("[HMR] Cannot apply update.");
+						console.warn("[HMR] " + err.stack || err.message);
+						console.warn("[HMR] You need to restart the application!");
+					} else {
+						console.warn("[HMR] Update failed: " + err.stack || err.message);
+					}
+					return;
+				}
+				if(!updatedModules) {
+					if(fromUpdate)
+						console.log("[HMR] Update applied.");
+					else
+						console.warn("[HMR] Cannot find update.");
+					return;
+				}
+	
+				module.hot.apply({
+					ignoreUnaccepted: true
+				}, function(err, renewedModules) {
+					if(err) {
+						if(module.hot.status() in {
+								abort: 1,
+								fail: 1
+							}) {
+							console.warn("[HMR] Cannot apply update (Need to do a full reload!)");
+							console.warn("[HMR] " + err.stack || err.message);
+							console.warn("[HMR] You need to restart the application!");
+						} else {
+							console.warn("[HMR] Update failed: " + err.stack || err.message);
+						}
+						return;
+					}
+	
+					__webpack_require__(2)(updatedModules, renewedModules);
+	
+					checkForUpdate(true);
+				});
+			});
+		}
+	
+		process.on(__resourceQuery.substr(1) || "SIGUSR2", function() {
+			if(module.hot.status() !== "idle") {
+				console.warn("[HMR] Got signal but currently in " + module.hot.status() + " state.");
+				console.warn("[HMR] Need to be in idle state to start hot update.");
+				return;
+			}
+	
+			checkForUpdate();
+		});
+	} else {
+		throw new Error("[HMR] Hot Module Replacement is disabled.");
+	}
+	
+	/* WEBPACK VAR INJECTION */}.call(exports, ""))
+
+/***/ },
 /* 2 */
+/***/ function(module, exports) {
+
+	/*
+		MIT License http://www.opensource.org/licenses/mit-license.php
+		Author Tobias Koppers @sokra
+	*/
+	module.exports = function(updatedModules, renewedModules) {
+		var unacceptedModules = updatedModules.filter(function(moduleId) {
+			return renewedModules && renewedModules.indexOf(moduleId) < 0;
+		});
+	
+		if(unacceptedModules.length > 0) {
+			console.warn("[HMR] The following modules couldn't be hot updated: (They would need a full reload!)");
+			unacceptedModules.forEach(function(moduleId) {
+				console.warn("[HMR]  - " + moduleId);
+			});
+		}
+	
+		if(!renewedModules || renewedModules.length === 0) {
+			console.log("[HMR] Nothing hot updated.");
+		} else {
+			console.log("[HMR] Updated modules:");
+			renewedModules.forEach(function(moduleId) {
+				console.log("[HMR]  - " + moduleId);
+			});
+		}
+	};
+
+
+/***/ },
+/* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	
 	var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 	
-	var server = _interopRequire(__webpack_require__(3));
+	var server = _interopRequire(__webpack_require__(4));
 	
 	console.log("Listening on port 4000...");
 	server.listen(4000);
@@ -664,7 +801,7 @@ require("source-map-support").install();
 
 
 /***/ },
-/* 3 */
+/* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(__dirname) {"use strict";
@@ -677,11 +814,11 @@ require("source-map-support").install();
 	
 	var express = _interopRequire(__webpack_require__(7));
 	
-	var socketio = _interopRequire(__webpack_require__(4));
+	var socketio = _interopRequire(__webpack_require__(8));
 	
-	var index = _interopRequire(__webpack_require__(8));
+	var index = _interopRequire(__webpack_require__(9));
 	
-	var page = _interopRequire(__webpack_require__(10));
+	var page = _interopRequire(__webpack_require__(11));
 	
 	var app = express();
 	app.use(express["static"](path.join(__dirname, "../static")));
@@ -691,7 +828,7 @@ require("source-map-support").install();
 	
 	function broadcastFrom(socket, point) {
 	  var data = {
-	    color: socket.color,
+	    color: getColor(),
 	    point: point,
 	    lastPoint: socket.lastPoint
 	  };
@@ -720,15 +857,15 @@ require("source-map-support").install();
 	  });
 	});
 	
-	function __eval() {}
+	function __eval() {
+	  sockets.forEach(function (s, i) {
+	    s.color = getColor();
+	    console.log("socket" + i, s.color);
+	  });
+	}
 	
 	module.exports = server;
 	
-	// sockets.forEach((s, i) => {
-	//   s.color = getColor();
-	//   console.log('socket' + i, s.color);
-	// });
-
 	/* HOT PATCH LOADER */ var __moduleBindings = ["broadcastFrom","getColor","__eval"]; if(true) {
 	  module.hot.accept(function(err) {
 	    console.log('[HMR] Error accepting: ' + err);
@@ -865,12 +1002,6 @@ require("source-map-support").install();
 	/* WEBPACK VAR INJECTION */}.call(exports, "src"))
 
 /***/ },
-/* 4 */
-/***/ function(module, exports) {
-
-	module.exports = require("socket.io");
-
-/***/ },
 /* 5 */
 /***/ function(module, exports) {
 
@@ -890,13 +1021,19 @@ require("source-map-support").install();
 
 /***/ },
 /* 8 */
+/***/ function(module, exports) {
+
+	module.exports = require("socket.io");
+
+/***/ },
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	
 	var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
 	
-	var t = _interopRequire(__webpack_require__(9));
+	var t = _interopRequire(__webpack_require__(10));
 	
 	module.exports = function (req, res) {
 	  var arr = JSON.parse(req.query.arr || "[]");
@@ -1040,13 +1177,13 @@ require("source-map-support").install();
 
 
 /***/ },
-/* 9 */
+/* 10 */
 /***/ function(module, exports) {
 
 	module.exports = require("transducers.js");
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -1187,113 +1324,6 @@ require("source-map-support").install();
 	    });
 	  }
 	}
-
-
-/***/ },
-/* 11 */,
-/* 12 */,
-/* 13 */,
-/* 14 */,
-/* 15 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(__resourceQuery) {/*
-		MIT License http://www.opensource.org/licenses/mit-license.php
-		Author Tobias Koppers @sokra
-	*/
-	/*globals __resourceQuery */
-	if(true) {
-		function checkForUpdate(fromUpdate) {
-			module.hot.check(function(err, updatedModules) {
-				if(err) {
-					if(module.hot.status() in {
-							abort: 1,
-							fail: 1
-						}) {
-						console.warn("[HMR] Cannot apply update.");
-						console.warn("[HMR] " + err.stack || err.message);
-						console.warn("[HMR] You need to restart the application!");
-					} else {
-						console.warn("[HMR] Update failed: " + err.stack || err.message);
-					}
-					return;
-				}
-				if(!updatedModules) {
-					if(fromUpdate)
-						console.log("[HMR] Update applied.");
-					else
-						console.warn("[HMR] Cannot find update.");
-					return;
-				}
-	
-				module.hot.apply({
-					ignoreUnaccepted: true
-				}, function(err, renewedModules) {
-					if(err) {
-						if(module.hot.status() in {
-								abort: 1,
-								fail: 1
-							}) {
-							console.warn("[HMR] Cannot apply update (Need to do a full reload!)");
-							console.warn("[HMR] " + err.stack || err.message);
-							console.warn("[HMR] You need to restart the application!");
-						} else {
-							console.warn("[HMR] Update failed: " + err.stack || err.message);
-						}
-						return;
-					}
-	
-					__webpack_require__(16)(updatedModules, renewedModules);
-	
-					checkForUpdate(true);
-				});
-			});
-		}
-	
-		process.on(__resourceQuery.substr(1) || "SIGUSR2", function() {
-			if(module.hot.status() !== "idle") {
-				console.warn("[HMR] Got signal but currently in " + module.hot.status() + " state.");
-				console.warn("[HMR] Need to be in idle state to start hot update.");
-				return;
-			}
-	
-			checkForUpdate();
-		});
-	} else {
-		throw new Error("[HMR] Hot Module Replacement is disabled.");
-	}
-	
-	/* WEBPACK VAR INJECTION */}.call(exports, ""))
-
-/***/ },
-/* 16 */
-/***/ function(module, exports) {
-
-	/*
-		MIT License http://www.opensource.org/licenses/mit-license.php
-		Author Tobias Koppers @sokra
-	*/
-	module.exports = function(updatedModules, renewedModules) {
-		var unacceptedModules = updatedModules.filter(function(moduleId) {
-			return renewedModules && renewedModules.indexOf(moduleId) < 0;
-		});
-	
-		if(unacceptedModules.length > 0) {
-			console.warn("[HMR] The following modules couldn't be hot updated: (They would need a full reload!)");
-			unacceptedModules.forEach(function(moduleId) {
-				console.warn("[HMR]  - " + moduleId);
-			});
-		}
-	
-		if(!renewedModules || renewedModules.length === 0) {
-			console.log("[HMR] Nothing hot updated.");
-		} else {
-			console.log("[HMR] Updated modules:");
-			renewedModules.forEach(function(moduleId) {
-				console.log("[HMR]  - " + moduleId);
-			});
-		}
-	};
 
 
 /***/ }
